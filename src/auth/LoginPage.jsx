@@ -10,7 +10,6 @@ export default function LoginPage() {
 
   async function handleSubmit(e) {
     e.preventDefault();
-
     try {
       await login(username, password);
     } catch {
@@ -25,23 +24,26 @@ export default function LoginPage() {
         margin: "150px auto",
         display: "flex",
         flexDirection: "column",
-        color: "white",
-        gap: 3
+        gap: 3,
+        bgcolor: "#1e1e1e",
+        p: 4,
+        borderRadius: 2,
+        boxShadow: 3,
+        color: "#fff",
       }}
-      >
-      <Typography sx={{
-        width: 400,
-        margin: "150px auto",
-        display: "flex",
-        flexDirection: "column",
-        color: "white",
-        gap: 3
-      }} variant="h5">Login</Typography>
+    >
+      <Typography variant="h5" sx={{ textAlign: "center" }}>
+        Login
+      </Typography>
 
       <TextField
         label="Username"
         value={username}
         onChange={(e) => setUsername(e.target.value)}
+        InputLabelProps={{ style: { color: "#bbb" } }}
+        InputProps={{ style: { color: "#fff" } }}
+        sx={{ bgcolor: "#2a2a2a", borderRadius: 1 }}
+        variant="filled"
       />
 
       <TextField
@@ -49,9 +51,13 @@ export default function LoginPage() {
         type="password"
         value={password}
         onChange={(e) => setPassword(e.target.value)}
+        InputLabelProps={{ style: { color: "#bbb" } }}
+        InputProps={{ style: { color: "#fff" } }}
+        sx={{ bgcolor: "#2a2a2a", borderRadius: 1 }}
+        variant="filled"
       />
 
-      <Button variant="contained" onClick={handleSubmit}>
+      <Button variant="contained" onClick={handleSubmit} sx={{ mt: 2 }}>
         Login
       </Button>
     </Box>
