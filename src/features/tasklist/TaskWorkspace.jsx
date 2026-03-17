@@ -9,11 +9,14 @@ import {
   Divider,
   Button,
   Toolbar,
+  Paper,
 } from "@mui/material";
 
 import DynamicForm from "../../DynamicForm";
 import { formRegistry } from "../../forms";
 import { useAuth } from "../../auth/authcontext";
+import Topbar from "../topbar/topbar";
+import TaskList from "./tasklist";
 
 export default function TaskWorkspace() {
   const { user, logout } = useAuth();
@@ -26,7 +29,6 @@ export default function TaskWorkspace() {
 
   const authHeader = "Basic " + btoa(user.username + ":" + user.password);
 
-  /** Load tasks from Camunda */
   async function loadTasks() {
     let url = "/engine-rest/task";
     if (tab === 0) {
@@ -35,11 +37,9 @@ export default function TaskWorkspace() {
     const res = await fetch(url, {
       headers: { Authorization: authHeader },
     });
-    const data = await res.json();
-    setTasks(data);
+    setTasks(await res.json());
   }
 
-  /** Load task info and form schema */
   async function loadTaskForm(taskId) {
     setLoadingForm(true);
     const res = await fetch(`/engine-rest/task/${taskId}`, {
@@ -53,7 +53,6 @@ export default function TaskWorkspace() {
     setLoadingForm(false);
   }
 
-  /** Claim task */
   async function claimTask(taskId) {
     await fetch(`/engine-rest/task/${taskId}/claim`, {
       method: "POST",
@@ -64,175 +63,80 @@ export default function TaskWorkspace() {
       body: JSON.stringify({ userId: user.username }),
     });
     loadTasks();
-    if (selectedTask?.id === taskId) loadTaskForm(taskId);
   }
 
-  /** Clear claim */
   async function unclaimTask(taskId) {
     await fetch(`/engine-rest/task/${taskId}/unclaim`, {
       method: "POST",
       headers: { Authorization: authHeader },
     });
     loadTasks();
-    if (selectedTask?.id === taskId) loadTaskForm(taskId);
   }
-
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const taskId = params.get("taskId");
-    if (taskId) loadTaskForm(taskId);
-  }, []);
 
   useEffect(() => {
     loadTasks();
   }, [tab]);
 
   return (
-    <Box
-      sx={{
-        display: "flex",
-        justifyContent: "center",  // center the main container
-        alignItems: "center",
-        height: "90vh",
-        width: "90vw",
-        bgcolor: "#1e1e1e",
-        color: "white",
-        p: 2, // small margin from edge
-      }}
-    >
+    <Box sx={{ bgcolor: "#f5f6f8", minHeight: "100vh", minWidth: "100vw", top: 0, left: 0, position: "absolute" }}>
+      {/* ✅ TOP BAR ONLY */}
+      <Topbar onLogout={logout} />
+
+      {/* ✅ MAIN CONTENT BELOW NAVBAR */}
       <Box
         sx={{
           display: "flex",
-          flexDirection: "column",
-          width: "95%",
-          maxWidth: 1200, // limit max width for modern layout
-          height: "95%",
-          borderRadius: 2,
-          overflow: "hidden",
-          boxShadow: 3,
-          bgcolor: "#1e1e1e",
+          gap: 3,
+          p: 3,
+          maxWidth: 1400,
+          margin: "0 auto",
         }}
       >
-        {/* HEADER */}
-        <Toolbar
+        {/* TASK LIST */}
+        <TaskList
+  tab={tab}
+  setTab={setTab}
+  tasks={tasks}
+  selectedTask={selectedTask}
+  onSelectTask={loadTaskForm}
+  onClaim={claimTask}
+  onUnclaim={unclaimTask}
+/>
+
+        {/* FORM */}
+        <Paper
           sx={{
-            display: "flex",
-            justifyContent: "space-between",
-            borderBottom: "1px solid #444",
+            flex: 1,
+            borderRadius: 3,
+            p: 4,
+            minHeight: "75vh",
           }}
         >
-          <Typography variant="h6" sx={{ color: "white" }}>
-            Task Workspace
-          </Typography>
-          <Button variant="outlined" color="error" onClick={logout}>
-            Logout
-          </Button>
-        </Toolbar>
+          {!selectedTask && (
+            <Typography color="text.secondary">
+              Select a task to begin
+            </Typography>
+          )}
 
-        <Box sx={{ display: "flex", flex: 1, overflow: "hidden" }}>
-          {/* TASK LIST */}
-          <Box
-            sx={{
-              width: 350,
-              borderRight: "1px solid #444",
-              bgcolor: "#2a2a2a",
-              display: "flex",
-              flexDirection: "column",
-            }}
-          >
-            <Tabs
-              value={tab}
-              onChange={(e, v) => setTab(v)}
-              variant="fullWidth"
-              textColor="inherit"
-              TabIndicatorProps={{ style: { backgroundColor: "#90caf9" } }}
-              sx={{
-                "& .MuiTab-root": { color: "#bbb" },
-                "& .Mui-selected": { color: "#fff" },
-                bgcolor: "#2a2a2a",
-              }}
-            >
-              <Tab label="My Tasks" />
-              <Tab label="All Tasks" />
-            </Tabs>
+          {loadingForm && <Typography>Loading...</Typography>}
 
-            {/* Scrollable task list */}
-            <Box sx={{ flex: 1, overflowY: "auto" }}>
-              <List>
-                {tasks.length === 0 && (
-                  <Typography sx={{ p: 2 }}>No tasks found</Typography>
-                )}
+          {selectedTask && !formSchema && (
+            <Typography>No form available</Typography>
+          )}
 
-                {tasks.map((task) => (
-                  <div key={task.id}>
-                    <ListItemButton
-                      onClick={() => loadTaskForm(task.id)}
-                      selected={selectedTask?.id === task.id}
-                      sx={{
-                        "&.Mui-selected": { bgcolor: "#3a3a3a" },
-                        "&:hover": { bgcolor: "#3a3a3a" },
-                      }}
-                    >
-                      <Box sx={{ width: "100%" }}>
-                        <Typography fontWeight="bold" sx={{ color: "#fff" }}>
-                          {task.name}
-                        </Typography>
-                        <Typography variant="caption" sx={{ color: "#ccc" }}>
-                          {task.assignee || "Unassigned"}
-                        </Typography>
-                        <Typography variant="caption" display="block" sx={{ color: "#999" }}>
-                          {new Date(task.created).toLocaleString()}
-                        </Typography>
+          {selectedTask && formSchema && (
+            <>
+              <Typography variant="h5" sx={{ mb: 3 }}>
+                {selectedTask.name}
+              </Typography>
 
-                        {/* Claim / Clear Claim Buttons */}
-                        <Box sx={{ mt: 1, display: "flex", gap: 1 }}>
-                          {!task.assignee && (
-                            <Button
-                              size="small"
-                              variant="contained"
-                              color="primary"
-                              onClick={() => claimTask(task.id)}
-                            >
-                              Claim
-                            </Button>
-                          )}
-                          {task.assignee && (
-                            <Button
-                              size="small"
-                              variant="outlined"
-                              color="secondary"
-                              onClick={() => unclaimTask(task.id)}
-                            >
-                              Clear Claim
-                            </Button>
-                          )}
-                        </Box>
-                      </Box>
-                    </ListItemButton>
-
-                    <Divider sx={{ bgcolor: "#444" }} />
-                  </div>
-                ))}
-              </List>
-            </Box>
-          </Box>
-
-          {/* FORM AREA */}
-          <Box sx={{ flex: 1, p: 4, overflowY: "auto" }}>
-            {!selectedTask && <Typography>Select a task</Typography>}
-            {loadingForm && <Typography>Loading form...</Typography>}
-            {selectedTask && !formSchema && <Typography>No form available.</Typography>}
-            {selectedTask && formSchema && (
-              <>
-                <Typography variant="h5" sx={{ mb: 3, color: "#fff" }}>
-                  {selectedTask.name}
-                </Typography>
-
-                <DynamicForm schema={formSchema} taskId={selectedTask.id} />
-              </>
-            )}
-          </Box>
-        </Box>
+              <DynamicForm
+                schema={formSchema}
+                taskId={selectedTask.id}
+              />
+            </>
+          )}
+        </Paper>
       </Box>
     </Box>
   );

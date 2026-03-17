@@ -1,115 +1,158 @@
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { fetchTasks, claimTask, unclaimTask } from "../api/camundaApi";
-import { Table, TableBody, TableCell, TableHead, TableRow, Button } from "@mui/material";
+import React, { useState } from "react";
+import {
+  Box,
+  Tabs,
+  Tab,
+  List,
+  ListItemButton,
+  Typography,
+  Divider,
+  Button,
+  Paper,
+  IconButton,
+} from "@mui/material";
+import FilterListIcon from "@mui/icons-material/FilterList";
+import TaskFilterMenu from "./TaskFilterMenu";
 
-export default function TaskList() {
-  const [tasks, setTasks] = useState([]);
-  const [loading, setLoading] = useState(true);
+export default function TaskList({
+  tab,
+  setTab,
+  tasks,
+  selectedTask,
+  onSelectTask,
+  onClaim,
+  onUnclaim,
+}) {
+  const [filterAnchor, setFilterAnchor] = useState(null);
+  const [filters, setFilters] = useState({});
 
-  const navigate = useNavigate();
-
-  const currentUser = "demo"; // replace with auth user
-
-  async function loadTasks() {
-    setLoading(true);
-    try {
-      const data = await fetchTasks(currentUser);
-      setTasks(data);
-    } catch (err) {
-      console.error(err);
+  // ✅ Apply filters
+  const filteredTasks = tasks.filter((task) => {
+    if (filters.name && !task.name.toLowerCase().includes(filters.name.toLowerCase())) {
+      return false;
     }
-    setLoading(false);
-  }
 
-  useEffect(() => {
-    loadTasks();
-  }, []);
+    if (
+      filters.assignee &&
+      !(task.assignee || "").toLowerCase().includes(filters.assignee.toLowerCase())
+    ) {
+      return false;
+    }
 
-  async function handleClaim(taskId) {
-    await claimTask(taskId, currentUser);
-    await loadTasks();
-  }
+    if (filters.priority) {
+      if (filters.priority === "low" && task.priority >= 30) return false;
+      if (filters.priority === "medium" && (task.priority < 30 || task.priority > 70))
+        return false;
+      if (filters.priority === "high" && task.priority <= 70) return false;
+    }
 
-  async function handleUnclaim(taskId) {
-    await unclaimTask(taskId);
-    await loadTasks();
-  }
+    if (filters.dueBefore && task.due) {
+      const taskDue = new Date(task.due);
+      const filterDue = new Date(filters.dueBefore);
+      if (taskDue > filterDue) return false;
+    }
 
-  function openTask(taskId) {
-    navigate(`/tasks/${taskId}`);
-  }
-
-  if (loading) return <div>Loading tasks...</div>;
+    return true;
+  });
 
   return (
-    <div style={{ padding: "20px" }}>
-      <h2>Task List</h2>
+    <Paper sx={{ width: 320, borderRadius: 3, overflow: "hidden" }}>
+      {/* HEADER: Tabs + Filter */}
+      <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", px: 1 }}>
+        <Tabs
+          value={tab}
+          onChange={(e, v) => setTab(v)}
+          variant="fullWidth"
+          TabIndicatorProps={{ style: { backgroundColor: "#c6e46c" } }}
+          sx={{ flex: 1 }}
+        >
+          <Tab label="My Tasks" />
+          <Tab label="All Tasks" />
+        </Tabs>
 
-      {tasks.length === 0 && <p>No tasks available</p>}
-<TableRow key={task.id}>
-  <TableCell>{task.name}</TableCell>
-  <TableCell>{task.assignee || "Unassigned"}</TableCell>
+        <IconButton onClick={(e) => setFilterAnchor(e.currentTarget)}>
+          <FilterListIcon />
+        </IconButton>
+      </Box>
 
-  <TableCell>
+      <Divider />
 
-    {!task.assignee && (
-      <ClaimTaskButton
-        taskId={task.id}
-        onSuccess={loadTasks}
+      {/* FILTER MENU */}
+      <TaskFilterMenu
+        anchorEl={filterAnchor}
+        open={Boolean(filterAnchor)}
+        onClose={() => setFilterAnchor(null)}
+        filters={filters}
+        onApply={(newFilters) => setFilters(newFilters)}
+        onReset={() => setFilters({})}
       />
-    )}
 
-    {task.assignee && (
-      <UnclaimTaskButton
-        taskId={task.id}
-        onSuccess={loadTasks}
-      />
-    )}
+      {/* TASK LIST */}
+      <List sx={{ maxHeight: "75vh", overflowY: "auto" }}>
+        {filteredTasks.length === 0 && <Typography sx={{ p: 2 }}>No tasks found</Typography>}
 
-  </TableCell>
+        {filteredTasks.map((task) => (
+          <Box key={task.id}>
+            <ListItemButton
+              onClick={() => onSelectTask(task.id)}
+              selected={selectedTask?.id === task.id}
+              sx={{
+                alignItems: "flex-start",
+                "&.Mui-selected": { bgcolor: "#eef7d1" },
+              }}
+            >
+              <Box sx={{ width: "100%" }}>
+                <Typography fontWeight={600}>{task.name}</Typography>
 
-</TableRow>
-      <table width="100%" border="1" cellPadding="10">
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th>Assignee</th>
-            <th>Created</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
+                <Typography variant="caption" color="text.secondary">
+                  {task.assignee || "Unassigned"}
+                </Typography>
 
-        <tbody>
-          {tasks.map((task) => (
-            <tr key={task.id}>
-              <td>{task.name}</td>
-              <td>{task.assignee || "Unassigned"}</td>
-              <td>{new Date(task.created).toLocaleString()}</td>
+                <Typography variant="caption" display="block">
+                  {task.due ? new Date(task.due).toLocaleDateString() : "No due date"}
+                </Typography>
 
-              <td>
-                {task.assignee === null && (
-                  <button onClick={() => handleClaim(task.id)}>
-                    Claim
-                  </button>
-                )}
+                {/* ACTIONS */}
+                <Box sx={{ mt: 1, display: "flex", gap: 1 }}>
+                  {!task.assignee && (
+                    <Button
+                      size="small"
+                      sx={{
+                        bgcolor: "#c6e46c",
+                        color: "#000",
+                        borderRadius: "20px",
+                        textTransform: "none",
+                      }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onClaim(task.id);
+                      }}
+                    >
+                      Claim
+                    </Button>
+                  )}
 
-                {task.assignee === currentUser && (
-                  <>
-                    <button onClick={() => openTask(task.id)}>
-                      Open
-                    </button>
+                  {task.assignee && (
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      sx={{ borderRadius: "20px", textTransform: "none" }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onUnclaim(task.id);
+                      }}
+                    >
+                      Clear
+                    </Button>
+                  )}
+                </Box>
+              </Box>
+            </ListItemButton>
 
-                    <button onClick={() => handleUnclaim(task.id)}>
-                      Unclaim
-                    </button>
-                  </>
-                )}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+            <Divider />
+          </Box>
+        ))}
+      </List>
+    </Paper>
   );
 }
