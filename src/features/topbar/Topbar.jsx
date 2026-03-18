@@ -3,7 +3,7 @@ import { Box, Typography, Button, IconButton } from "@mui/material";
 import AppsIcon from "@mui/icons-material/Apps";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import ProfileMenu from "./ProfileMenu";
-
+import vegaLogo from "../../assets/vega-logo-black.svg";
 export default function Topbar({ onLogout }) {
   const [anchorEl, setAnchorEl] = useState(null);
 
@@ -33,9 +33,16 @@ export default function Topbar({ onLogout }) {
       {/* LEFT SIDE */}
       <Box sx={{ display: "flex", alignItems: "center", gap: 4 }}>
         {/* Logo */}
-        <Typography variant="h6" sx={{ fontWeight: 500 , color: 'black' }}>
+        <img
+          src={vegaLogo}
+          alt="VegaIT Logo"
+          width={120}
+          height={40}
+          style={{ objectFit: "contain" }}
+        />
+        {/* <Typography variant="h6" sx={{ fontWeight: 500 , color: 'black' }}>
           vega<span style={{ fontWeight: 300 }}>IT</span>
-        </Typography>
+        </Typography> */}
 
         {/* Navigation */}
         <Box sx={{ display: "flex", gap: 3 , color: 'black' }}>

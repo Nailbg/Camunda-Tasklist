@@ -9,6 +9,7 @@ import {
   Paper,
 } from "@mui/material";
 import { useAuth } from "./authcontext";
+import vegaLogo from "../assets/vega-logo-black.svg";
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -26,7 +27,17 @@ export default function LoginPage() {
   }
 
   return (
-    <Box sx={{ display: "flex", height: "100vh", width: "100vw", bgcolor: "#f5f5f5", position: "absolute", top: 0, left: 0 }}>
+    <Box
+      sx={{
+        display: "flex",
+        height: "100vh",
+        width: "100vw",
+        bgcolor: "#f5f5f5",
+        position: "absolute",
+        top: 0,
+        left: 0,
+      }}
+    >
       {/* LEFT SIDE (illustration placeholder) */}
       <Box
         sx={{
@@ -37,9 +48,15 @@ export default function LoginPage() {
           bgcolor: "#eaeaea",
         }}
       >
+        <img
+          src={vegaLogo}
+          alt="VegaIT Logo"
+          width={120}
+          height={40}
+          style={{ objectFit: "contain" }}
+        />
         {/* Replace with your image or SVG */}
-        <Typography variant="h6" color="text.secondary">
-        </Typography>
+        <Typography variant="h6" color="text.secondary"></Typography>
       </Box>
 
       {/* RIGHT SIDE (login card) */}
@@ -60,13 +77,20 @@ export default function LoginPage() {
             textAlign: "center",
           }}
         >
-          {/* Logo / Title */}
-          <Typography variant="h4" sx={{ mb: 1, fontWeight: 500 }}>
-            vega<span style={{ fontWeight: 300 }}>IT</span>
-          </Typography>
+          <Box sx={{alignContent: 'center', alignSelf: 'center', display: 'flex', justifyContent: 'center', mb: 3}}>
+            {/* Logo / Title */}
+            <img
+              src={vegaLogo}
+              alt="VegaIT Logo"
+              width={120}
+              height={40}
+              style={{ objectFit: "contain" }}
+            />
+          </Box>
+      
 
           <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-            Log in to Timesheet
+            Log in to Tasklist
           </Typography>
 
           {/* Form */}

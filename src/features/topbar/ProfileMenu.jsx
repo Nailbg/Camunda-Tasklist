@@ -55,9 +55,6 @@ export default function ProfileMenu({
           Change password
         </Typography>
         <Typography sx={{ py: 1, cursor: "pointer" }}>
-          Non-working days
-        </Typography>
-        <Typography sx={{ py: 1, cursor: "pointer" }}>
           My profile
         </Typography>
       </Box>
