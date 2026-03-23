@@ -13,7 +13,12 @@
     "@mui/lab": "^7.0.1-beta.23",
     "@mui/material": "^7.3.9",
     "@mui/x-date-pickers": "^8.27.2",
+    "aws-sdk": "^2.1693.0",
+    "axios": "^1.13.6",
+    "body-parser": "^2.2.2",
+    "cors": "^2.8.6",
     "date-fns": "^4.1.0",
+    "express": "^5.2.1",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
   },

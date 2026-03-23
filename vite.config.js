@@ -3,25 +3,23 @@ import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 
 export default defineConfig({
-  plugins: [
-    react(),
-    tailwindcss()
-  ],
+  plugins: [react(), tailwindcss()],
   server: {
     host: true,
-    headers: {
-      "X-Frame-Options": "ALLOWALL"
-    },
+    headers: { "X-Frame-Options": "ALLOWALL" },
     cors: true,
     proxy: {
-      '/engine-rest': {
-        target: 'http://localhost:8080',
+      "/engine-rest": {
+        target: "http://localhost:8080",
+        changeOrigin: true,
+        secure: false,
+      },
+      "/api": {
+        target: "http://localhost:5001",
         changeOrigin: true,
         secure: false,
       },
     },
   },
-  resolve: {
-    dedupe: ["react", "react-dom"]
-  }
+  resolve: { dedupe: ["react", "react-dom"] },
 });

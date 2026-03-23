@@ -17,6 +17,7 @@ import { formRegistry } from "../../forms";
 import { useAuth } from "../../auth/authcontext";
 import Topbar from "../topbar/topbar";
 import TaskList from "./tasklist";
+import FileUpload from "../files/FileUpload";
 
 export default function TaskWorkspace() {
   const { user, logout } = useAuth();
@@ -92,6 +93,7 @@ export default function TaskWorkspace() {
           margin: "0 auto",
         }}
       >
+
         {/* TASK LIST */}
         <TaskList
   tab={tab}
@@ -129,6 +131,7 @@ export default function TaskWorkspace() {
               <Typography variant="h5" sx={{ mb: 3 }}>
                 {selectedTask.name}
               </Typography>
+        <FileUpload taskId={selectedTask?.id} />
 
               <DynamicForm
                 schema={formSchema}

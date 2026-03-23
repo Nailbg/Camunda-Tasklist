@@ -4,6 +4,7 @@ import AppsIcon from "@mui/icons-material/Apps";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import ProfileMenu from "./ProfileMenu";
 import vegaLogo from "../../assets/vega-logo-black.svg";
+import FileUpload from "../files/FileUpload";
 export default function Topbar({ onLogout }) {
   const [anchorEl, setAnchorEl] = useState(null);
 
@@ -49,6 +50,8 @@ export default function Topbar({ onLogout }) {
           <Typography sx={{ cursor: "pointer", fontWeight: 500}}>
             Tasklist
           </Typography>
+
+          <FileUpload taskId={"123"} />
           
         </Box>
       </Box>
