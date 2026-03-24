@@ -61,7 +61,7 @@ export default function TaskList({
   );
 
   return (
-    <Paper sx={{ width: 320, borderRadius: 3, overflow: "hidden" }}>
+    <Paper sx={{ width: 320, borderRadius: 3, minHeight: "100%", overflowY: "auto" }}>
       {/* HEADER: Tabs + Filter */}
       <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", px: 1 }}>
         <Tabs
@@ -93,7 +93,7 @@ export default function TaskList({
       />
 
       {/* TASK LIST */}
-      <List sx={{ maxHeight: "75vh", overflowY: "auto" }}>
+      <List sx={{ maxHeight: "83vh", overflowY: "scroll" }}>
         {sortedTasks.length === 0 && <Typography sx={{ p: 2 }}>No tasks found</Typography>}
 
         {sortedTasks.map((task) => (

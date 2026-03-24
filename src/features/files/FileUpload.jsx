@@ -14,11 +14,11 @@ export default function FileUpload({ taskId, onUploadSuccess }) {
     setFiles((prevFiles) => {
       const combined = [...prevFiles, ...newFiles];
 
-      // Optional: prevent duplicates by name + size
+      // Prevent duplicates
       const unique = combined.filter(
         (file, index, self) =>
           index ===
-          self.findIndex((f) => f.name === file.name && f.size === file.size),
+          self.findIndex((f) => f.name === file.name && f.size === file.size)
       );
 
       return unique;
@@ -68,21 +68,33 @@ export default function FileUpload({ taskId, onUploadSuccess }) {
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
 
-        // 1. Get presigned URL
-        const { data } = await axios.post("/api/get-presigned-url", {
+        console.log("Uploading file:", file.name, file.type);
+
+        // ✅ Safe fallback for MIME type
+        const payload = {
           fileName: file.name,
-          fileType: file.type,
-        });
+          fileType: file.type || "application/octet-stream",
+        };
+
+        console.log("Payload:", payload);
+
+        // 1. Get presigned URL
+        const { data } = await axios.post(
+          "http://localhost:5001/api/get-presigned-url",
+          payload
+        );
 
         const { uploadUrl, fileUrl } = data;
 
         // 2. Upload to MinIO
         await axios.put(uploadUrl, file, {
-          headers: { "Content-Type": file.type },
+          headers: {
+            "Content-Type": file.type || "application/octet-stream",
+          },
         });
 
         // 3. Attach to Camunda
-        await axios.post("/api/attach-file", {
+        await axios.post("http://localhost:5001/api/attach-file", {
           taskId,
           fileUrl,
           fileName: file.name,
@@ -98,7 +110,7 @@ export default function FileUpload({ taskId, onUploadSuccess }) {
 
       alert("Files uploaded successfully!");
     } catch (err) {
-      console.error(err);
+      console.error("Upload error:", err.response?.data || err.message);
       alert("Upload failed");
     } finally {
       setUploading(false);
@@ -128,7 +140,7 @@ export default function FileUpload({ taskId, onUploadSuccess }) {
         />
       </label>
 
-      {/* Selected files with remove option */}
+      {/* Selected files */}
       {files.length > 0 && (
         <div className="bg-gray-50 p-3 rounded border flex flex-col gap-2">
           {files.map((file, idx) => (
@@ -164,9 +176,7 @@ export default function FileUpload({ taskId, onUploadSuccess }) {
           disabled={uploading}
           style={{
             backgroundColor: uploading ? "#8ba04b" : "#c6e46c",
-            
             color: "#000",
-            
           }}
           className="px-4 py-2 rounded"
         >

@@ -63,9 +63,9 @@ export default function TaskWorkspace() {
   }, [tab]);
 
   return (
-    <Box sx={{ bgcolor: "#f5f6f8", minHeight: "100vh", minWidth: "100vw", top: 0, left: 0, position: "absolute" }}>
+    <Box sx={{ bgcolor: "#f5f6f8", minHeight: "100vh", minWidth: "100vw", top: 0, left: 0, position: "absolute", overflowY: "" }}>
       <Topbar onLogout={logout} />
-      <Box sx={{ display: "flex", gap: 3, p: 3, maxWidth: 1400, margin: "0 auto" }}>
+      <Box sx={{ display: "flex", gap: 3, p: 3, maxWidth: 1400, height: "max-content", margin: "0 auto" }}>
         <TaskList
           tab={tab}
           setTab={setTab}
@@ -76,7 +76,7 @@ export default function TaskWorkspace() {
   onUnclaim={unclaimTask}
         />
 
-        <Paper sx={{ flex: 1, borderRadius: 3, p: 4, minHeight: "75vh" }}>
+        <Paper sx={{ flex: 1, borderRadius: 3, p: 4,minHeight: "88vh", maxHeight: "88vh", overflowY: "scroll" }}>
           {!selectedTask && <Typography color="text.secondary">Select a task to begin</Typography>}
           {loadingForm && <Typography>Loading...</Typography>}
 
