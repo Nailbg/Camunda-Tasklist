@@ -102,6 +102,50 @@ app.get("/api/get-download-url", async (req, res) => {
   }
 });
 
+// --- Get files attached to a task ---
+app.get("/api/get-task-files", async (req, res) => {
+  const { taskId } = req.query;
+  if (!taskId) return res.status(400).json({ error: "Missing taskId" });
+
+  try {
+    const response = await axios.get(
+      `http://localhost:8080/engine-rest/task/${taskId}/variables/attachment`
+    );
+
+    // Expecting JSON string { fileName, fileUrl }
+    const attachment = response.data.value ? JSON.parse(response.data.value) : null;
+    res.json({ files: attachment ? [attachment] : [] });
+  } catch (err) {
+    if (err.response && err.response.status === 404) {
+      // No attachment variable yet
+      return res.json({ files: [] });
+    }
+    console.error("Error fetching task files:", err.response?.data || err.message);
+    res.status(500).json({ error: err.response?.data || err.message });
+  }
+});
+
+// --- Optional: download file via MinIO presigned URL ---
+app.get("/api/download-file", async (req, res) => {
+  const { key } = req.query;
+  if (!key) return res.status(400).json({ error: "Missing key" });
+
+  try {
+    const url = await s3.getSignedUrlPromise("getObject", {
+      Bucket: "camunda-files",
+      Key: key,
+      Expires: 300, // 5 minutes
+    });
+    res.json({ url });
+  } catch (err) {
+    console.error("MinIO download URL error:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
+
 // --- Start server ---
 const PORT = 5001;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+

@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import axios from "axios";
 
-export default function FileUpload({ taskId }) {
+export default function FileUpload({ taskId, onUploadSuccess }) {
   const [file, setFile] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -46,7 +46,9 @@ export default function FileUpload({ taskId }) {
         fileUrl,
         fileName: file.name,
       });
-
+      if (onUploadSuccess) {
+        onUploadSuccess();
+      }
       alert("File uploaded and attached successfully!");
       setFile(null);
       setProgress(0);
@@ -59,17 +61,26 @@ export default function FileUpload({ taskId }) {
   };
 
   return (
-    <div className="flex flex-col gap-2">
-      {/* Show file select only if no file is selected */}
+    <div className="flex flex-col gap-3">
+      {/* File picker */}
       {!file && (
-        <label className="bg-blue-500 text-white px-4 py-2 rounded cursor-pointer w-max">
-          Select File
-          <input
-            type="file"
-            className="hidden"
-            onChange={handleFileSelect}
-          />
+        <label className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center cursor-pointer hover:bg-gray-50 transition">
+          <div className="text-sm text-gray-600">Click to select a file</div>
+          <input key={file ? file.name : "empty"} type="file" className="hidden" onChange={handleFileSelect} />
         </label>
+      )}
+
+      {/* Selected file */}
+      {file && !uploading && (
+        <div className="flex items-center justify-between bg-gray-100 p-2 rounded">
+          <span className="text-sm truncate">{file.name}</span>
+          <button
+            onClick={() => setFile(null)}
+            className="text-red-500 text-xs"
+          >
+            Remove
+          </button>
+        </div>
       )}
 
       {/* Upload button */}
@@ -77,22 +88,21 @@ export default function FileUpload({ taskId }) {
         <button
           onClick={handleUpload}
           disabled={uploading}
-          className={`px-4 py-2 rounded w-max ${
-            uploading
-              ? "bg-gray-400 cursor-not-allowed"
-              : "bg-green-500 text-white"
+          className={`px-4 py-2 rounded text-white ${
+            uploading ? "bg-gray-400" : "bg-blue-600 hover:bg-blue-700"
           }`}
         >
-          {uploading ? `Uploading... ${progress}%` : `Upload ${file.name}`}
+          {uploading ? `Uploading ${progress}%` : "Upload File"}
         </button>
       )}
 
+      {/* Progress bar */}
       {uploading && (
-        <div className="w-full bg-gray-200 h-2 rounded mt-1">
+        <div className="w-full bg-gray-200 h-2 rounded">
           <div
-            className="bg-green-500 h-2 rounded"
+            className="bg-blue-600 h-2 rounded transition-all"
             style={{ width: `${progress}%` }}
-          ></div>
+          />
         </div>
       )}
     </div>

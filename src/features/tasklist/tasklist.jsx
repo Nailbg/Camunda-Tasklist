@@ -55,6 +55,11 @@ export default function TaskList({
     return true;
   });
 
+  // ✅ Sort by latest created first
+  const sortedTasks = [...filteredTasks].sort(
+    (a, b) => new Date(b.created) - new Date(a.created)
+  );
+
   return (
     <Paper sx={{ width: 320, borderRadius: 3, overflow: "hidden" }}>
       {/* HEADER: Tabs + Filter */}
@@ -89,9 +94,9 @@ export default function TaskList({
 
       {/* TASK LIST */}
       <List sx={{ maxHeight: "75vh", overflowY: "auto" }}>
-        {filteredTasks.length === 0 && <Typography sx={{ p: 2 }}>No tasks found</Typography>}
+        {sortedTasks.length === 0 && <Typography sx={{ p: 2 }}>No tasks found</Typography>}
 
-        {filteredTasks.map((task) => (
+        {sortedTasks.map((task) => (
           <Box key={task.id}>
             <ListItemButton
               onClick={() => onSelectTask(task.id)}

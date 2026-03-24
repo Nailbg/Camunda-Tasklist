@@ -432,6 +432,18 @@ export const formSchema = {
       "validate": {
         "required": true
       }
+    },
+    {
+      "label": "File test",
+      "type": "fileupload",
+      "layout": {
+        "row": "Row_082rt7l",
+        "columns": null
+      },
+      "id": "Field_1bmc2el",
+      "key": "attachment",
+      "description": "test file upload"
     }
+
   ],
 };

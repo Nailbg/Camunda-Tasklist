@@ -12,16 +12,20 @@ import {
   Typography,
   Box,
   Grid,
-  FormHelperText
+  FormHelperText,
 } from "@mui/material";
+import FileUpload from "./features/files/FileUpload";
+import TaskFiles from "./features/taskfiles/TaskFiles";
 
 export default function DynamicForm({ schema = { components: [] }, taskId }) {
+  const [refreshFiles, setRefreshFiles] = useState(0);
   const initialState = {};
   const initialErrors = {};
   schema.components.forEach((c) => {
-    initialState[c.key] = c.type === "select" || c.type === "radio"
-      ? c.values?.[0]?.value || ""
-      : "";
+    initialState[c.key] =
+      c.type === "select" || c.type === "radio"
+        ? c.values?.[0]?.value || ""
+        : "";
     initialErrors[c.key] = "";
   });
 
@@ -60,14 +64,14 @@ export default function DynamicForm({ schema = { components: [] }, taskId }) {
     await fetch(`/engine-rest/task/${taskId}/complete`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ variables })
+      body: JSON.stringify({ variables }),
     });
 
     alert("Task submitted");
   };
-if (!schema.components || schema.components.length === 0) {
-  return <div>No fields to display in this form.</div>;
-}
+  if (!schema.components || schema.components.length === 0) {
+    return <div>No fields to display in this form.</div>;
+  }
   const renderField = (component) => {
     const error = Boolean(errors[component.key]);
     const helperText = errors[component.key] || component.description;
@@ -88,7 +92,11 @@ if (!schema.components || schema.components.length === 0) {
 
       case "select":
         return (
-          <FormControl fullWidth required={component.validate?.required} error={error}>
+          <FormControl
+            fullWidth
+            required={component.validate?.required}
+            error={error}
+          >
             <InputLabel>{component.label}</InputLabel>
             <Select
               value={formData[component.key] || ""}
@@ -108,8 +116,11 @@ if (!schema.components || schema.components.length === 0) {
       case "radio":
         return (
           <FormControl required={component.validate?.required} error={error}>
-            <Typography sx={{ mb: 1, color: "text.primary" }}>{component.label}</Typography>
-            <RadioGroup sx={{ mb: 1, color: "text.primary" }}
+            <Typography sx={{ mb: 1, color: "text.primary" }}>
+              {component.label}
+            </Typography>
+            <RadioGroup
+              sx={{ mb: 1, color: "text.primary" }}
               value={formData[component.key] || ""}
               onChange={(e) => handleChange(component.key, e.target.value)}
               row
@@ -125,6 +136,39 @@ if (!schema.components || schema.components.length === 0) {
             </RadioGroup>
             {error && <FormHelperText>{helperText}</FormHelperText>}
           </FormControl>
+        );
+      case "fileupload":
+        return (
+          <Box
+            sx={{
+              border: "1px solid #e0e0e0",
+              borderRadius: 2,
+              p: 2,
+              backgroundColor: "#fafafa",
+            }}
+          >
+            <Typography variant="subtitle1" sx={{ mb: 1 }}>
+              {component.label}
+            </Typography>
+
+            {component.description && (
+              <Typography
+                variant="body2"
+                sx={{ mb: 2, color: "text.secondary" }}
+              >
+                {component.description}
+              </Typography>
+            )}
+
+            <FileUpload
+              taskId={taskId}
+              onUploadSuccess={() => setRefreshFiles((v) => v + 1)}
+            />
+
+            <Box sx={{ mt: 2 }}>
+              <TaskFiles taskId={taskId} refresh={refreshFiles} />
+            </Box>
+          </Box>
         );
 
       case "datetime":
@@ -160,7 +204,7 @@ if (!schema.components || schema.components.length === 0) {
         gap: 4,
         backgroundColor: "#fafafa",
         borderRadius: 2,
-        boxShadow: 3
+        boxShadow: 3,
       }}
     >
       <Grid container spacing={3}>
@@ -168,7 +212,11 @@ if (!schema.components || schema.components.length === 0) {
           <Grid
             item
             xs={12}
-            sm={component.type === "textfield" || component.type === "datetime" ? 12 : 6}
+            sm={
+              component.type === "textfield" || component.type === "datetime"
+                ? 12
+                : 6
+            }
             key={component.key}
           >
             {renderField(component)}

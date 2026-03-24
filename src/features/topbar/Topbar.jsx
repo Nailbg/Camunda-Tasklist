@@ -51,7 +51,6 @@ export default function Topbar({ onLogout }) {
             Tasklist
           </Typography>
 
-          <FileUpload taskId={"123"} />
           
         </Box>
       </Box>
