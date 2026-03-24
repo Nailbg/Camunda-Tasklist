@@ -7,8 +7,23 @@ export default function FileUpload({ taskId, onUploadSuccess }) {
   const [progress, setProgress] = useState(0);
   const [dragActive, setDragActive] = useState(false);
 
+  // ✅ Append files instead of replacing
   const handleFiles = (selectedFiles) => {
-    setFiles(Array.from(selectedFiles));
+    const newFiles = Array.from(selectedFiles);
+
+    setFiles((prevFiles) => {
+      const combined = [...prevFiles, ...newFiles];
+
+      // Optional: prevent duplicates by name + size
+      const unique = combined.filter(
+        (file, index, self) =>
+          index ===
+          self.findIndex((f) => f.name === file.name && f.size === file.size),
+      );
+
+      return unique;
+    });
+
     setProgress(0);
   };
 
@@ -34,6 +49,11 @@ export default function FileUpload({ taskId, onUploadSuccess }) {
       handleFiles(e.dataTransfer.files);
       e.dataTransfer.clearData();
     }
+  };
+
+  // ✅ Remove file before upload
+  const handleRemoveFile = (indexToRemove) => {
+    setFiles((prev) => prev.filter((_, index) => index !== indexToRemove));
   };
 
   const handleUpload = async () => {
@@ -108,15 +128,29 @@ export default function FileUpload({ taskId, onUploadSuccess }) {
         />
       </label>
 
-      {/* Selected files */}
+      {/* Selected files with remove option */}
       {files.length > 0 && (
-        <div className="bg-gray-50 p-3 rounded border">
+        <div className="bg-gray-50 p-3 rounded border flex flex-col gap-2">
           {files.map((file, idx) => (
-            <div key={idx} className="text-sm flex justify-between">
-              <span>{file.name}</span>
-              <span className="text-gray-400">
-                {(file.size / 1024).toFixed(1)} KB
-              </span>
+            <div
+              key={idx}
+              className="text-sm flex justify-between items-center"
+            >
+              <div>
+                <div>{file.name}</div>
+                <div className="text-gray-400 text-xs">
+                  {(file.size / 1024).toFixed(1)} KB
+                </div>
+              </div>
+
+              {/* Remove button */}
+              <button
+                type="button"
+                onClick={() => handleRemoveFile(idx)}
+                className="text-amber-500 text-xs hover:underline"
+              >
+                Remove
+              </button>
             </div>
           ))}
         </div>
@@ -125,11 +159,16 @@ export default function FileUpload({ taskId, onUploadSuccess }) {
       {/* Upload button */}
       {files.length > 0 && (
         <button
+          type="button"
           onClick={handleUpload}
           disabled={uploading}
-          className={`px-4 py-2 rounded text-white ${
-            uploading ? "bg-gray-400" : "bg-blue-600 hover:bg-blue-700"
-          }`}
+          style={{
+            backgroundColor: uploading ? "#8ba04b" : "#c6e46c",
+            
+            color: "#000",
+            
+          }}
+          className="px-4 py-2 rounded"
         >
           {uploading
             ? `Uploading... ${progress}%`

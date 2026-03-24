@@ -225,7 +225,13 @@ export default function DynamicForm({ schema = { components: [] }, taskId }) {
       </Grid>
 
       <Box sx={{ mt: 3, display: "flex", justifyContent: "flex-end" }}>
-        <Button variant="contained" type="submit" size="large">
+        <Button variant="contained" type="submit" size="large"
+        sx={{
+            bgcolor: "#c6e46c",
+            color: "#000",
+            borderRadius: "20px",
+            textTransform: "none",
+          }}>
           Submit
         </Button>
       </Box>
