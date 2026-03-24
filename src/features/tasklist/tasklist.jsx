@@ -28,20 +28,28 @@ export default function TaskList({
 
   // ✅ Apply filters
   const filteredTasks = tasks.filter((task) => {
-    if (filters.name && !task.name.toLowerCase().includes(filters.name.toLowerCase())) {
+    if (
+      filters.name &&
+      !task.name.toLowerCase().includes(filters.name.toLowerCase())
+    ) {
       return false;
     }
 
     if (
       filters.assignee &&
-      !(task.assignee || "").toLowerCase().includes(filters.assignee.toLowerCase())
+      !(task.assignee || "")
+        .toLowerCase()
+        .includes(filters.assignee.toLowerCase())
     ) {
       return false;
     }
 
     if (filters.priority) {
       if (filters.priority === "low" && task.priority >= 30) return false;
-      if (filters.priority === "medium" && (task.priority < 30 || task.priority > 70))
+      if (
+        filters.priority === "medium" &&
+        (task.priority < 30 || task.priority > 70)
+      )
         return false;
       if (filters.priority === "high" && task.priority <= 70) return false;
     }
@@ -57,19 +65,37 @@ export default function TaskList({
 
   // ✅ Sort by latest created first
   const sortedTasks = [...filteredTasks].sort(
-    (a, b) => new Date(b.created) - new Date(a.created)
+    (a, b) => new Date(b.created) - new Date(a.created),
   );
 
   return (
-    <Paper sx={{ width: 320, borderRadius: 3, minHeight: "100%", overflowY: "auto" }}>
+    <Paper
+      sx={{ width: 320, borderRadius: 3, minHeight: "100%", overflowY: "auto" }}
+    >
       {/* HEADER: Tabs + Filter */}
-      <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", px: 1 }}>
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          px: 1,
+        }}
+      >
         <Tabs
           value={tab}
           onChange={(e, v) => setTab(v)}
           variant="fullWidth"
           TabIndicatorProps={{ style: { backgroundColor: "#c6e46c" } }}
-          sx={{ flex: 1 }}
+          sx={{
+            flex: 1,
+            "& .MuiTab-root": {
+              textTransform: "none",
+            },
+            "& .Mui-selected": {
+              color: "#8ba04b !important",
+              fontWeight: 600,
+            },
+          }}
         >
           <Tab label="My Tasks" />
           <Tab label="All Tasks" />
@@ -94,7 +120,9 @@ export default function TaskList({
 
       {/* TASK LIST */}
       <List sx={{ maxHeight: "83vh", overflowY: "scroll" }}>
-        {sortedTasks.length === 0 && <Typography sx={{ p: 2 }}>No tasks found</Typography>}
+        {sortedTasks.length === 0 && (
+          <Typography sx={{ p: 2 }}>No tasks found</Typography>
+        )}
 
         {sortedTasks.map((task) => (
           <Box key={task.id}>
@@ -114,7 +142,9 @@ export default function TaskList({
                 </Typography>
 
                 <Typography variant="caption" display="block">
-                  {task.due ? new Date(task.due).toLocaleDateString() : "No due date"}
+                  {task.due
+                    ? new Date(task.due).toLocaleDateString()
+                    : "No due date"}
                 </Typography>
 
                 {/* ACTIONS */}
