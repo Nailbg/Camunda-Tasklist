@@ -1,51 +1,53 @@
 import { useEffect, useState } from "react";
 import {
-  Button,
-  Typography,
   Box,
-  Paper,
-  List,
-  ListItem,
-  ListItemText,
+  Typography,
   IconButton,
-  Divider,
+  Grid,
+  Card,
+  CardContent,
+  CardActions,
+  Button,
 } from "@mui/material";
 import DownloadIcon from "@mui/icons-material/Download";
+import DeleteIcon from "@mui/icons-material/Delete";
 import InsertDriveFileIcon from "@mui/icons-material/InsertDriveFile";
 import axios from "axios";
 
 export default function TaskFiles({ taskId, refresh }) {
   const [files, setFiles] = useState([]);
-  const [loading, setLoading] = useState(false);
 
   const loadFiles = async () => {
     if (!taskId) return;
 
-    setLoading(true);
-    try {
-      const { data } = await axios.get("/api/get-task-files", {
-        params: { taskId },
-      });
-      setFiles(data.files || []);
-    } catch (err) {
-      console.error("Error loading files:", err.response?.data || err.message);
-    } finally {
-      setLoading(false);
-    }
+    const { data } = await axios.get("/api/get-task-files", {
+      params: { taskId },
+    });
+
+    setFiles(data.files || []);
   };
 
   const handleDownload = async (file) => {
-    try {
-      const key = file.fileUrl.split("/").pop();
+    const key = file.fileUrl.split("/").pop();
 
-      const { data } = await axios.get("/api/download-file", {
-        params: { key },
+    const { data } = await axios.get("/api/download-file", {
+      params: { key },
+    });
+
+    window.open(data.url, "_blank");
+  };
+
+  const handleDelete = async (fileToDelete) => {
+    try {
+      await axios.post("/api/delete-file", {
+        taskId,
+        fileName: fileToDelete.fileName,
       });
 
-      window.open(data.url, "_blank");
+      loadFiles();
     } catch (err) {
-      console.error("Download error:", err.response?.data || err.message);
-      alert("Download failed");
+      console.error(err);
+      alert("Delete failed");
     }
   };
 
@@ -56,44 +58,48 @@ export default function TaskFiles({ taskId, refresh }) {
   if (!taskId) return null;
 
   return (
-    <Paper variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
+    <Box>
       <Typography variant="subtitle1" sx={{ mb: 2 }}>
         Attached Files
       </Typography>
 
-      {loading && (
+      {files.length === 0 && (
         <Typography variant="body2" color="text.secondary">
-          Loading files...
+          No files uploaded yet
         </Typography>
       )}
 
-      {!loading && files.length === 0 && (
-        <Typography variant="body2" color="text.secondary">
-          No files attached
-        </Typography>
-      )}
-
-      <List dense>
+      <Grid container spacing={2}>
         {files.map((file, idx) => (
-          <Box key={idx}>
-            <ListItem
-              secondaryAction={
-                <IconButton
-                  edge="end"
+          <Grid item xs={12} sm={6} key={idx}>
+            <Card variant="outlined">
+              <CardContent sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                <InsertDriveFileIcon color="action" />
+                <Typography variant="body2" noWrap>
+                  {file.fileName}
+                </Typography>
+              </CardContent>
+
+              <CardActions>
+                <Button
+                  size="small"
+                  startIcon={<DownloadIcon />}
                   onClick={() => handleDownload(file)}
                 >
-                  <DownloadIcon />
-                </IconButton>
-              }
-            >
-              <InsertDriveFileIcon sx={{ mr: 1, color: "gray" }} />
-              <ListItemText primary={file.fileName} />
-            </ListItem>
+                  Download
+                </Button>
 
-            {idx < files.length - 1 && <Divider />}
-          </Box>
+                <IconButton
+                  color="error"
+                  onClick={() => handleDelete(file)}
+                >
+                  <DeleteIcon />
+                </IconButton>
+              </CardActions>
+            </Card>
+          </Grid>
         ))}
-      </List>
-    </Paper>
+      </Grid>
+    </Box>
   );
 }

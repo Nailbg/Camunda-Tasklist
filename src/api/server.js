@@ -9,15 +9,15 @@ app.use(bodyParser.json());
 
 // --- MinIO S3 client ---
 const s3 = new AWS.S3({
-  endpoint: "http://localhost:9000", // MinIO URL
+  endpoint: "http://localhost:9000",
   accessKeyId: "admin",
   secretAccessKey: "password123",
-  s3ForcePathStyle: true, // important for MinIO
+  s3ForcePathStyle: true,
   signatureVersion: "v4",
   region: "us-east-1",
 });
 
-// --- CORS middleware for development ---
+// --- CORS middleware ---
 app.use((req, res, next) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader(
@@ -28,7 +28,7 @@ app.use((req, res, next) => {
   next();
 });
 
-// --- 1️⃣ Generate pre-signed URL for uploading to MinIO ---
+// --- 1️⃣ Generate pre-signed URL ---
 app.post("/api/get-presigned-url", async (req, res) => {
   const { fileName, fileType } = req.body;
 
@@ -40,7 +40,7 @@ app.post("/api/get-presigned-url", async (req, res) => {
   const params = {
     Bucket: "camunda-files",
     Key: key,
-    Expires: 300, // 5 minutes expiry
+    Expires: 300,
     ContentType: fileType,
   };
 
@@ -54,7 +54,7 @@ app.post("/api/get-presigned-url", async (req, res) => {
   }
 });
 
-// --- 2️⃣ Attach file metadata to Camunda task ---
+// --- 2️⃣ Attach file metadata (UPDATED → supports arrays) ---
 app.post("/api/attach-file", async (req, res) => {
   const { taskId, fileUrl, fileName } = req.body;
 
@@ -63,21 +63,35 @@ app.post("/api/attach-file", async (req, res) => {
   }
 
   try {
-    // Camunda expects PUT /task/{id}/variables/{varName} for single variable
+    let existing = [];
+
+    try {
+      const response = await axios.get(
+        `http://localhost:8080/engine-rest/task/${taskId}/variables/attachment`
+      );
+
+      existing = response.data.value
+        ? JSON.parse(response.data.value)
+        : [];
+    } catch (e) {
+      existing = [];
+    }
+
+    if (!Array.isArray(existing)) existing = [];
+
+    const updated = [...existing, { fileName, fileUrl }];
+
     await axios.put(
       `http://localhost:8080/engine-rest/task/${taskId}/variables/attachment`,
       {
-        value: JSON.stringify({ fileName, fileUrl }),
+        value: JSON.stringify(updated),
         type: "String",
       }
     );
 
     res.json({ message: "File attached to task successfully" });
   } catch (err) {
-    console.error(
-      "Camunda attach error:",
-      err.response?.data || err.message
-    );
+    console.error("Camunda attach error:", err.response?.data || err.message);
     res.status(500).json({
       error: err.response?.data || err.message,
     });
@@ -93,7 +107,7 @@ app.get("/api/get-download-url", async (req, res) => {
     const url = await s3.getSignedUrlPromise("getObject", {
       Bucket: "camunda-files",
       Key: key,
-      Expires: 300, // 5 minutes expiry
+      Expires: 300,
     });
     res.json({ url });
   } catch (err) {
@@ -102,7 +116,7 @@ app.get("/api/get-download-url", async (req, res) => {
   }
 });
 
-// --- Get files attached to a task ---
+// --- Get files attached to a task (UPDATED) ---
 app.get("/api/get-task-files", async (req, res) => {
   const { taskId } = req.query;
   if (!taskId) return res.status(400).json({ error: "Missing taskId" });
@@ -112,20 +126,24 @@ app.get("/api/get-task-files", async (req, res) => {
       `http://localhost:8080/engine-rest/task/${taskId}/variables/attachment`
     );
 
-    // Expecting JSON string { fileName, fileUrl }
-    const attachment = response.data.value ? JSON.parse(response.data.value) : null;
-    res.json({ files: attachment ? [attachment] : [] });
+    const attachment = response.data.value
+      ? JSON.parse(response.data.value)
+      : [];
+
+    const files = Array.isArray(attachment) ? attachment : [attachment];
+
+    res.json({ files });
   } catch (err) {
     if (err.response && err.response.status === 404) {
-      // No attachment variable yet
       return res.json({ files: [] });
     }
+
     console.error("Error fetching task files:", err.response?.data || err.message);
     res.status(500).json({ error: err.response?.data || err.message });
   }
 });
 
-// --- Optional: download file via MinIO presigned URL ---
+// --- Download file ---
 app.get("/api/download-file", async (req, res) => {
   const { key } = req.query;
   if (!key) return res.status(400).json({ error: "Missing key" });
@@ -134,7 +152,7 @@ app.get("/api/download-file", async (req, res) => {
     const url = await s3.getSignedUrlPromise("getObject", {
       Bucket: "camunda-files",
       Key: key,
-      Expires: 300, // 5 minutes
+      Expires: 300,
     });
     res.json({ url });
   } catch (err) {
@@ -143,9 +161,37 @@ app.get("/api/download-file", async (req, res) => {
   }
 });
 
+// --- Delete file (UPDATED → supports arrays) ---
+app.post("/api/delete-file", async (req, res) => {
+  const { taskId, fileName } = req.body;
 
+  try {
+    const response = await axios.get(
+      `http://localhost:8080/engine-rest/task/${taskId}/variables/attachment`
+    );
+
+    let files = response.data.value
+      ? JSON.parse(response.data.value)
+      : [];
+
+    if (!Array.isArray(files)) files = [];
+
+    const updated = files.filter((f) => f.fileName !== fileName);
+
+    await axios.put(
+      `http://localhost:8080/engine-rest/task/${taskId}/variables/attachment`,
+      {
+        value: JSON.stringify(updated),
+        type: "String",
+      }
+    );
+
+    res.json({ message: "File deleted" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 // --- Start server ---
 const PORT = 5001;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
-

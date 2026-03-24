@@ -2,59 +2,84 @@ import React, { useState } from "react";
 import axios from "axios";
 
 export default function FileUpload({ taskId, onUploadSuccess }) {
-  const [file, setFile] = useState(null);
+  const [files, setFiles] = useState([]);
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [dragActive, setDragActive] = useState(false);
 
-  const handleFileSelect = (e) => {
-    setFile(e.target.files[0]);
+  const handleFiles = (selectedFiles) => {
+    setFiles(Array.from(selectedFiles));
     setProgress(0);
   };
 
-  const handleUpload = async () => {
-    if (!file) {
-      alert("Please select a file first!");
-      return;
+  // --- Drag handlers ---
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      handleFiles(e.dataTransfer.files);
+      e.dataTransfer.clearData();
     }
-    if (!taskId) {
-      alert("No task selected.");
+  };
+
+  const handleUpload = async () => {
+    if (!files.length) {
+      alert("Please select files first!");
       return;
     }
 
     setUploading(true);
+
     try {
-      // 1️⃣ Request pre-signed URL from backend
-      const { data } = await axios.post("/api/get-presigned-url", {
-        fileName: file.name,
-        fileType: file.type,
-      });
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
 
-      const { uploadUrl, fileUrl } = data;
+        // 1. Get presigned URL
+        const { data } = await axios.post("/api/get-presigned-url", {
+          fileName: file.name,
+          fileType: file.type,
+        });
 
-      // 2️⃣ Upload file directly to MinIO
-      await axios.put(uploadUrl, file, {
-        headers: { "Content-Type": file.type },
-        onUploadProgress: (evt) => {
-          const percent = Math.round((evt.loaded * 100) / evt.total);
-          setProgress(percent);
-        },
-      });
+        const { uploadUrl, fileUrl } = data;
 
-      // 3️⃣ Attach file metadata to Camunda task
-      await axios.post("/api/attach-file", {
-        taskId,
-        fileUrl,
-        fileName: file.name,
-      });
-      if (onUploadSuccess) {
-        onUploadSuccess();
+        // 2. Upload to MinIO
+        await axios.put(uploadUrl, file, {
+          headers: { "Content-Type": file.type },
+        });
+
+        // 3. Attach to Camunda
+        await axios.post("/api/attach-file", {
+          taskId,
+          fileUrl,
+          fileName: file.name,
+        });
+
+        setProgress(Math.round(((i + 1) / files.length) * 100));
       }
-      alert("File uploaded and attached successfully!");
-      setFile(null);
+
+      setFiles([]);
       setProgress(0);
+
+      if (onUploadSuccess) onUploadSuccess();
+
+      alert("Files uploaded successfully!");
     } catch (err) {
-      console.error("Upload error:", err.response?.data || err.message);
-      alert("Upload failed. Check console for details.");
+      console.error(err);
+      alert("Upload failed");
     } finally {
       setUploading(false);
     }
@@ -62,29 +87,43 @@ export default function FileUpload({ taskId, onUploadSuccess }) {
 
   return (
     <div className="flex flex-col gap-3">
-      {/* File picker */}
-      {!file && (
-        <label className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center cursor-pointer hover:bg-gray-50 transition">
-          <div className="text-sm text-gray-600">Click to select a file</div>
-          <input key={file ? file.name : "empty"} type="file" className="hidden" onChange={handleFileSelect} />
-        </label>
-      )}
+      {/* Drop zone */}
+      <label
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+        className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition ${
+          dragActive ? "border-blue-500 bg-blue-50" : "border-gray-300"
+        }`}
+      >
+        <div className="text-sm text-gray-600">
+          Drag & drop files here or click to select
+        </div>
 
-      {/* Selected file */}
-      {file && !uploading && (
-        <div className="flex items-center justify-between bg-gray-100 p-2 rounded">
-          <span className="text-sm truncate">{file.name}</span>
-          <button
-            onClick={() => setFile(null)}
-            className="text-red-500 text-xs"
-          >
-            Remove
-          </button>
+        <input
+          type="file"
+          multiple
+          className="hidden"
+          onChange={(e) => handleFiles(e.target.files)}
+        />
+      </label>
+
+      {/* Selected files */}
+      {files.length > 0 && (
+        <div className="bg-gray-50 p-3 rounded border">
+          {files.map((file, idx) => (
+            <div key={idx} className="text-sm flex justify-between">
+              <span>{file.name}</span>
+              <span className="text-gray-400">
+                {(file.size / 1024).toFixed(1)} KB
+              </span>
+            </div>
+          ))}
         </div>
       )}
 
       {/* Upload button */}
-      {file && (
+      {files.length > 0 && (
         <button
           onClick={handleUpload}
           disabled={uploading}
@@ -92,7 +131,9 @@ export default function FileUpload({ taskId, onUploadSuccess }) {
             uploading ? "bg-gray-400" : "bg-blue-600 hover:bg-blue-700"
           }`}
         >
-          {uploading ? `Uploading ${progress}%` : "Upload File"}
+          {uploading
+            ? `Uploading... ${progress}%`
+            : `Upload ${files.length} file(s)`}
         </button>
       )}
 
