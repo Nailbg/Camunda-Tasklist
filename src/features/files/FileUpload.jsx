@@ -1,5 +1,8 @@
 import React, { useState } from "react";
 import axios from "axios";
+import { Box, Typography, IconButton, Button } from "@mui/material";
+import InsertDriveFileIcon from "@mui/icons-material/InsertDriveFile";
+import DeleteIcon from "@mui/icons-material/Delete";
 
 export default function FileUpload({ taskId, onUploadSuccess }) {
   const [files, setFiles] = useState([]);
@@ -7,18 +10,27 @@ export default function FileUpload({ taskId, onUploadSuccess }) {
   const [progress, setProgress] = useState(0);
   const [dragActive, setDragActive] = useState(false);
 
-  // ✅ Append files instead of replacing
+  const getFileExtension = (fileName) => {
+    return fileName.split(".").pop()?.toUpperCase() || "FILE";
+  };
+
+  const formatFileSize = (bytes) => {
+    if (!bytes) return "—";
+    const kb = bytes / 1024;
+    if (kb < 1024) return `${kb.toFixed(1)} KB`;
+    return `${(kb / 1024).toFixed(1)} MB`;
+  };
+
   const handleFiles = (selectedFiles) => {
     const newFiles = Array.from(selectedFiles);
 
     setFiles((prevFiles) => {
       const combined = [...prevFiles, ...newFiles];
 
-      // Prevent duplicates
       const unique = combined.filter(
         (file, index, self) =>
           index ===
-          self.findIndex((f) => f.name === file.name && f.size === file.size)
+          self.findIndex((f) => f.name === file.name && f.size === file.size),
       );
 
       return unique;
@@ -27,7 +39,6 @@ export default function FileUpload({ taskId, onUploadSuccess }) {
     setProgress(0);
   };
 
-  // --- Drag handlers ---
   const handleDragOver = (e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -51,7 +62,6 @@ export default function FileUpload({ taskId, onUploadSuccess }) {
     }
   };
 
-  // ✅ Remove file before upload
   const handleRemoveFile = (indexToRemove) => {
     setFiles((prev) => prev.filter((_, index) => index !== indexToRemove));
   };
@@ -68,32 +78,24 @@ export default function FileUpload({ taskId, onUploadSuccess }) {
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
 
-        console.log("Uploading file:", file.name, file.type);
-
-        // ✅ Safe fallback for MIME type
         const payload = {
           fileName: file.name,
           fileType: file.type || "application/octet-stream",
         };
 
-        console.log("Payload:", payload);
-
-        // 1. Get presigned URL
         const { data } = await axios.post(
           "http://localhost:5001/api/get-presigned-url",
-          payload
+          payload,
         );
 
         const { uploadUrl, fileUrl } = data;
 
-        // 2. Upload to MinIO
         await axios.put(uploadUrl, file, {
           headers: {
             "Content-Type": file.type || "application/octet-stream",
           },
         });
 
-        // 3. Attach to Camunda
         await axios.post("http://localhost:5001/api/attach-file", {
           taskId,
           fileUrl,
@@ -125,7 +127,7 @@ export default function FileUpload({ taskId, onUploadSuccess }) {
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
         className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition ${
-          dragActive ? "border-blue-500 bg-blue-50" : "border-gray-300"
+          dragActive ? "border-[#c6e46c] bg-[#f5fbe8]" : "border-gray-300"
         }`}
       >
         <div className="text-sm text-gray-600">
@@ -142,55 +144,113 @@ export default function FileUpload({ taskId, onUploadSuccess }) {
 
       {/* Selected files */}
       {files.length > 0 && (
-        <div className="bg-gray-50 p-3 rounded border flex flex-col gap-2">
+        <Box
+          sx={{
+            bgcolor: "#fafafa",
+            p: 1.5,
+            borderRadius: 2,
+            display: "flex",
+            flexDirection: "column",
+            gap: 1,
+          }}
+        >
           {files.map((file, idx) => (
-            <div
+            <Box
               key={idx}
-              className="text-sm flex justify-between items-center"
-            >
-              <div>
-                <div>{file.name}</div>
-                <div className="text-gray-400 text-xs">
-                  {(file.size / 1024).toFixed(1)} KB
-                </div>
-              </div>
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                p: 1,
+                borderRadius: 2,
+                transition: "all 0.2s ease",
 
-              {/* Remove button */}
-              <button
-                type="button"
-                onClick={() => handleRemoveFile(idx)}
-                className="text-amber-500 text-xs hover:underline"
+                "&:hover": {
+                  bgcolor: "#eef7d1",
+                },
+
+                "&:active": {
+                  bgcolor: "#dceca3",
+                  transform: "scale(0.98)",
+                },
+              }}
+            >
+              {/* LEFT */}
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 1,
+                  minWidth: 0,
+                  flex: 1,
+                }}
               >
-                Remove
-              </button>
-            </div>
+                <InsertDriveFileIcon sx={{ fontSize: 18, color: "#8ba04b" }} />
+
+                <Box>
+                  <Typography variant="caption" noWrap>
+                    {file.name} -{" "}
+                  </Typography>
+
+                  <Typography variant="caption" color="text.secondary">
+                    {getFileExtension(file.name)} • {formatFileSize(file.size)}
+                  </Typography>
+                </Box>
+              </Box>
+
+              {/* REMOVE */}
+              <IconButton
+                size="small"
+                onClick={() => handleRemoveFile(idx)}
+                sx={{
+                  "&:hover": {
+                    bgcolor: "#ffecec",
+                  },
+                  "&:active": {
+                    bgcolor: "#ffd6d6",
+                    transform: "scale(0.9)",
+                  },
+                }}
+              >
+                <DeleteIcon sx={{ fontSize: 18, color: "#d32f2f" }} />
+              </IconButton>
+            </Box>
           ))}
-        </div>
+        </Box>
       )}
 
       {/* Upload button */}
       {files.length > 0 && (
-        <button
-          type="button"
+        <Button
           onClick={handleUpload}
           disabled={uploading}
-          style={{
-            backgroundColor: uploading ? "#8ba04b" : "#c6e46c",
+          sx={{
+            bgcolor: "#c6e46c",
             color: "#000",
+            borderRadius: "8px",
+            textTransform: "none",
+
+            "&:hover": {
+              bgcolor: "#dceca3",
+            },
+
+            "&:active": {
+              bgcolor: "#b9d85c",
+              transform: "scale(0.98)",
+            },
           }}
-          className="px-4 py-2 rounded"
         >
           {uploading
             ? `Uploading... ${progress}%`
             : `Upload ${files.length} file(s)`}
-        </button>
+        </Button>
       )}
 
       {/* Progress bar */}
       {uploading && (
         <div className="w-full bg-gray-200 h-2 rounded">
           <div
-            className="bg-blue-600 h-2 rounded transition-all"
+            className="bg-[#8ba04b] h-2 rounded transition-all"
             style={{ width: `${progress}%` }}
           />
         </div>
