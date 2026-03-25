@@ -26,7 +26,6 @@ export default function TaskList({
   const [filterAnchor, setFilterAnchor] = useState(null);
   const [filters, setFilters] = useState({});
 
-  // ✅ Apply filters
   const filteredTasks = tasks.filter((task) => {
     if (
       filters.name &&
@@ -63,7 +62,6 @@ export default function TaskList({
     return true;
   });
 
-  // ✅ Sort by latest created first
   const sortedTasks = [...filteredTasks].sort(
     (a, b) => new Date(b.created) - new Date(a.created),
   );
@@ -72,7 +70,7 @@ export default function TaskList({
     <Paper
       sx={{ width: 320, borderRadius: 3, minHeight: "100%", overflowY: "auto" }}
     >
-      {/* HEADER: Tabs + Filter */}
+      {/* HEADER */}
       <Box
         sx={{
           display: "flex",
@@ -90,6 +88,10 @@ export default function TaskList({
             flex: 1,
             "& .MuiTab-root": {
               textTransform: "none",
+              outline: "none",
+            },
+            "& .MuiTab-root.Mui-focusVisible": {
+              outline: "2px solid #c6e46c",
             },
             "& .Mui-selected": {
               color: "#8ba04b !important",
@@ -97,11 +99,39 @@ export default function TaskList({
             },
           }}
         >
-          <Tab label="My Tasks" />
-          <Tab label="All Tasks" />
+          <Tab disableRipple label="My Tasks" />
+          <Tab disableRipple label="All Tasks" />
         </Tabs>
 
-        <IconButton onClick={(e) => setFilterAnchor(e.currentTarget)}>
+        <IconButton
+          disableRipple
+          onClick={(e) => setFilterAnchor(e.currentTarget)}
+          sx={{
+            borderRadius: "10px",
+            transition: "all 0.2s ease",
+
+            "&:hover": {
+              backgroundColor: "#eef7d1",
+            },
+
+            "&:active": {
+              backgroundColor: "#dceca3",
+              transform: "scale(0.95)",
+            },
+
+            // ❌ remove ALL default focus styles
+            "&:focus": {
+              outline: "none",
+            },
+            "&:focus-visible": {
+              outline: "none",
+            },
+            "&.Mui-focusVisible": {
+              outline: "none",
+              boxShadow: "0 0 0 2px #c6e46c", // ✅ custom focus instead
+            },
+          }}
+        >
           <FilterListIcon />
         </IconButton>
       </Box>
@@ -147,7 +177,6 @@ export default function TaskList({
                     : "No due date"}
                 </Typography>
 
-                {/* ACTIONS */}
                 <Box sx={{ mt: 1, display: "flex", gap: 1 }}>
                   {!task.assignee && (
                     <Button
