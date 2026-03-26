@@ -32,7 +32,6 @@ export default function TaskWorkspace() {
     });
     const task = await res.json();
     const schema = formRegistry[task.taskDefinitionKey];
-    console.log("Loaded form schema:", schema);
     setFormSchema(schema || null);
     setSelectedTask(task);
     setLoadingForm(false);
