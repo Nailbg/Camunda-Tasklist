@@ -5,8 +5,13 @@ import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import ProfileMenu from "./ProfileMenu";
 import vegaLogo from "../../assets/vega-logo-black.svg";
 import FileUpload from "../files/FileUpload";
+import StartProcessButton from "../start-process/StartProcessButton";
+import { useAuth } from "../../auth/authcontext";
 export default function Topbar({ onLogout }) {
   const [anchorEl, setAnchorEl] = useState(null);
+    const { user } = useAuth();
+  
+  const authHeader = "Basic " + btoa(user.username + ":" + user.password);
 
   const handleOpenProfile = (event) => {
     setAnchorEl(event.currentTarget);
@@ -57,6 +62,8 @@ export default function Topbar({ onLogout }) {
 
       {/* RIGHT SIDE */}
       <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                  <StartProcessButton authHeader={authHeader} />
+
         <IconButton>
           <AppsIcon />
         </IconButton>
