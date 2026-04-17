@@ -4,7 +4,7 @@ import AppsIcon from "@mui/icons-material/Apps";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import ProfileMenu from "./ProfileMenu";
 import vegaLogo from "../../assets/vega-logo-black.svg";
-import FileUpload from "../files/FileUpload";
+import FileUpload from "../forms/FileUpload";
 import StartProcessButton from "../start-process/StartProcessButton";
 import { useAuth } from "../../auth/authcontext";
 export default function Topbar({ onLogout }) {

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Box, Paper, Typography } from "@mui/material";
 import DynamicForm from "../../DynamicForm";
-import FileUpload from "../files/FileUpload";
+import FileUpload from "../forms/FileUpload";
 import TaskList from "./tasklist";
 import Topbar from "../topbar/topbar";
 import { useAuth } from "../../auth/authcontext";
